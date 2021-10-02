@@ -5,9 +5,7 @@
 //! $ passman gen-pass 12
 //! $ passman save for <website> user <username> (pass <password>|genpass [<len>])
 //! $ passman get for <website> user <username>
-//! $ passman toclip for <website> user <username>
 //! $ passman sync
-//!
 //!
 
 use structopt::StructOpt;
@@ -17,7 +15,7 @@ mod passman;
 fn main() {
     let args = Cli::from_args();
 
-    let default_file_name = ".passman-db".to_string();
+    let default_file_name = shellexpand::full("~/.passman-db").unwrap().to_string();
 
     let mut passman = passman::PassMan::new(&default_file_name);
 
@@ -47,7 +45,6 @@ fn main() {
                 println!("Couldn't find the password you're looking for.");
             }
         },
-        Cli::ToClip {} => {}
         Cli::Sync {} => {}
     }
 
@@ -82,7 +79,6 @@ enum Cli {
         #[structopt(short, long)]
         user: String,
     },
-    ToClip {},
     Sync {},
 }
 
