@@ -61,7 +61,7 @@ impl PassMan {
 
 /// Generate a random password of the length if provided
 pub fn genpass(len: Option<usize>) -> String {
-    let len = len.unwrap_or(30);
+    let len = len.unwrap_or(12);
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
         .take(len)

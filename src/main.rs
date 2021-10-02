@@ -2,7 +2,7 @@
 //! So what I want to do is create a command line application which I can use as follows:
 //! ```
 //! $ passman save for github.com user maheshbansod pass thegithubpassword
-//! $ passman genpass 12
+//! $ passman gen-pass 12
 //! $ passman save for <website> user <username> (pass <password>|genpass [<len>])
 //! $ passman get for <website> user <username>
 //! $ passman toclip for <website> user <username>
@@ -36,7 +36,9 @@ fn main() {
             });
             passman.save_or_update(&for_what, &user, &pass);
         }
-        Cli::GenPass {} => {}
+        Cli::GenPass { len } => {
+            println!("{}", passman::genpass(len));
+        }
         Cli::Get { for_what, user } => match passman.get(&for_what, &user) {
             Some(pass) => {
                 println!("{}", pass);
@@ -71,7 +73,9 @@ enum Cli {
         #[structopt(short, long, required_unless = "pass")]
         genpass: Option<Option<usize>>,
     },
-    GenPass {},
+    GenPass {
+        len: Option<usize>,
+    },
     Get {
         #[structopt(short = "f", long = "for")]
         for_what: String,
