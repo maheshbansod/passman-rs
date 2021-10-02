@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
 struct PassMapKey {
@@ -12,19 +13,18 @@ pub struct PassMan {
     data: HashMap<PassMapKey, String>,
 }
 
-const PASSFILE: &str = ".passman-rs-db";
-
 impl PassMan {
     /// Create a new Passman
-    pub fn new(filename: &std::path::PathBuf) -> PassMan {
-        let data = if let Ok(data) = std::fs::read_to_string(filename) {
+    pub fn new<P: AsRef<Path>>(filename: P) -> PassMan {
+        let data = if let Ok(data) = std::fs::read_to_string(&filename) {
             bincode::deserialize(data.as_bytes()).unwrap()
         } else {
             HashMap::new()
         };
-        let filename = filename.clone();
+        let mut filenamebuff = PathBuf::new();
+        filenamebuff.push(filename);
         PassMan {
-            dfile: (*filename).to_path_buf(),
+            dfile: (*filenamebuff).to_path_buf(),
             data,
         }
     }

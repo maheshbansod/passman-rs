@@ -19,7 +19,7 @@ fn main() {
 
     let default_file_name = ".passman-db".to_string();
 
-    let mut passman = passman::PassMan::new(&std::path::PathBuf::from(default_file_name));
+    let mut passman = passman::PassMan::new(&default_file_name);
 
     match args {
         Cli::Save {
@@ -78,7 +78,7 @@ mod tests {
     use super::*;
     #[test]
     fn it_should_save_a_pass_and_get_it_inmemory() {
-        let mut passman = passman::PassMan::new(&std::path::PathBuf::from("testdb.test"));
+        let mut passman = passman::PassMan::new(&"testdb.test");
         passman.save_or_update("test1", "user1", "pass1");
         passman.save_or_update("test2", "user2", "pass2");
         passman.save_or_update("test1", "user3", "pass3");
