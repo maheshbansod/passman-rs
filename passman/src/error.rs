@@ -8,6 +8,7 @@ pub struct Error {
 pub enum ErrorKind {
     Serialization(std::boxed::Box<bincode::ErrorKind>),
     IOError(std::io::Error),
+    CryptorError(bincode_aes::CryptorError),
 }
 impl From<std::boxed::Box<bincode::ErrorKind>> for Error {
     fn from(err: std::boxed::Box<bincode::ErrorKind>) -> Error {
@@ -24,3 +25,19 @@ impl From<std::io::Error> for Error {
         }
     }
 }
+
+impl From<bincode_aes::CryptorError> for Error {
+    fn from(err: bincode_aes::CryptorError) -> Self {
+        Self {
+            kind: ErrorKind::CryptorError(err),
+        }
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for Error {}

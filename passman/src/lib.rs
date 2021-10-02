@@ -1,10 +1,12 @@
+mod config;
 mod error;
 
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
+use config::Config;
 use error::Error;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -14,24 +16,26 @@ struct PassMapKey {
 }
 
 pub struct PassMan {
-    dfile: std::path::PathBuf,
     data: HashMap<PassMapKey, String>,
+    config: Config,
 }
 
 impl PassMan {
     /// Create a new Passman
-    pub fn new<P: AsRef<Path>>(filename: P) -> PassMan {
-        let data = if let Ok(data) = std::fs::read_to_string(&filename) {
-            bincode::deserialize(data.as_bytes()).unwrap()
+    pub fn new<P: AsRef<Path>>(config_file: P) -> Result<PassMan, Error> {
+        let config = Config::from_file(config_file)?;
+        Self::with_config(config)
+    }
+
+    pub fn with_config(config: Config) -> Result<Self, Error> {
+        let data = if let Ok(data) = std::fs::read_to_string(config.db_path()) {
+            let mut bytes = data.as_bytes().to_vec();
+            //TODO: remove the unwrap and find out houw to handle Box<dyn Errors>????
+            config.cryptor.deserialize(&mut bytes).unwrap()
         } else {
             HashMap::new()
         };
-        let mut filenamebuff = PathBuf::new();
-        filenamebuff.push(filename);
-        PassMan {
-            dfile: (*filenamebuff).to_path_buf(),
-            data,
-        }
+        Ok(Self { data, config })
     }
 
     /// Save a new user-password in the data file or update existing
@@ -58,7 +62,7 @@ impl PassMan {
     /// Save the object that is in memory to the data file
     /// Note that without calling this method, nothing will be saved in the file
     pub fn save(&self) -> Result<(), Error> {
-        std::fs::write(&self.dfile, bincode::serialize(&self.data)?)?;
+        std::fs::write(&self.config.db_path(), bincode::serialize(&self.data)?)?;
         Ok(())
     }
 }
@@ -78,7 +82,8 @@ mod tests {
     use super::*;
     #[test]
     fn it_should_save_a_pass_and_get_it_inmemory() {
-        let mut passman = crate::PassMan::new(&"testdb.test");
+        let config = Config::new("secret_key").unwrap();
+        let mut passman = crate::PassMan::with_config(config).unwrap();
         passman.save_or_update("test1", "user1", "pass1");
         passman.save_or_update("test2", "user2", "pass2");
         passman.save_or_update("test1", "user3", "pass3");
@@ -89,13 +94,15 @@ mod tests {
     }
     #[test]
     fn it_should_save_a_pass_and_get_it_in_a_file() {
-        let mut passman = PassMan::new(&std::path::PathBuf::from("testdb.test"));
+        let config = Config::new("secret_key").unwrap();
+        let mut passman = crate::PassMan::with_config(config).unwrap();
         passman.save_or_update("test1", "user1", "pass1");
         passman.save_or_update("test2", "user2", "pass2");
         passman.save_or_update("test1", "user3", "pass3");
         passman.save().unwrap();
 
-        let passman = PassMan::new(&std::path::PathBuf::from("testdb.test"));
+        let config = Config::new("secret_key").unwrap();
+        let passman = crate::PassMan::with_config(config).unwrap();
 
         assert_eq!(passman.get("test1", "user1"), Some(String::from("pass1")));
         assert_eq!(passman.get("test2", "user2"), Some(String::from("pass2")));

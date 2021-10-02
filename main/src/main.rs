@@ -15,7 +15,7 @@ fn main() {
 
     let default_file_name = shellexpand::full("~/.passman-db").unwrap().to_string();
 
-    let mut passman = passman::PassMan::new(&default_file_name);
+    let mut passman = passman::PassMan::new(&default_file_name).unwrap();
 
     match args {
         Cli::Save {
