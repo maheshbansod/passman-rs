@@ -47,7 +47,7 @@ impl PassMan {
                 for_what: String::from(for_what),
                 user: String::from(user),
             })
-            .map(|x| x.clone())
+            .cloned()
     }
 
     /// Save the object that is in memory to the data file
