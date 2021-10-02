@@ -48,9 +48,9 @@ fn main() {
 
     match passman.save() {
         Ok(_) => {}
-        _ => {
+        Err(e) => {
             //TODO: make more descriptive + proper error return codes
-            println!("There was an error while trying to save the file.");
+            println!("There was an error while trying to save the file.\n{:?}", e);
         }
     }
     // println!("{:?}", args);

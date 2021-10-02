@@ -1,7 +1,11 @@
+mod error;
+
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+use error::Error;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
 struct PassMapKey {
@@ -67,21 +71,6 @@ pub fn genpass(len: Option<usize>) -> String {
         .take(len)
         .map(char::from)
         .collect()
-}
-
-//TODO: implement proper error handling
-#[derive(Debug)]
-pub struct Error {}
-impl From<std::boxed::Box<bincode::ErrorKind>> for Error {
-    fn from(_: std::boxed::Box<bincode::ErrorKind>) -> Error {
-        Error {}
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(_: std::io::Error) -> Error {
-        Error {}
-    }
 }
 
 #[cfg(test)]
