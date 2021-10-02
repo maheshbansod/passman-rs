@@ -1,2 +1,4 @@
 /target
 *.test
+.passman-db
+*.passman-db

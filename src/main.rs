@@ -26,7 +26,14 @@ fn main() {
             for_what,
             user,
             pass,
+            genpass,
         } => {
+            let pass = pass.unwrap_or_else(|| {
+                let len = genpass.expect("Expected genpass if pass is not provided");
+                let pass = passman::genpass(len);
+                println!("{}", pass);
+                pass
+            });
             passman.save_or_update(&for_what, &user, &pass);
         }
         Cli::GenPass {} => {}
@@ -59,8 +66,10 @@ enum Cli {
         for_what: String,
         #[structopt(short, long)]
         user: String,
-        #[structopt(short, long)]
-        pass: String,
+        #[structopt(short, long, required_unless = "genpass")]
+        pass: Option<String>,
+        #[structopt(short, long, required_unless = "pass")]
+        genpass: Option<Option<usize>>,
     },
     GenPass {},
     Get {

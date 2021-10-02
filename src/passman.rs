@@ -1,3 +1,4 @@
+use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -56,6 +57,16 @@ impl PassMan {
         std::fs::write(&self.dfile, bincode::serialize(&self.data)?)?;
         Ok(())
     }
+}
+
+/// Generate a random password of the length if provided
+pub fn genpass(len: Option<usize>) -> String {
+    let len = len.unwrap_or(30);
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(char::from)
+        .collect()
 }
 
 //TODO: implement proper error handling
