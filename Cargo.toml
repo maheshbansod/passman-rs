@@ -1,13 +1,5 @@
-[package]
-name = "passman-rs"
-version = "0.1.0"
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-structopt = "0.3.22"
-bincode = "1.3.3"
-serde = {version = "^1.0.63", features = ["derive"]}
-rand = "0.8.4"
-shellexpand = "2.1.0"
+[workspace]
+members = [
+	"passman",
+    "main",
+]

@@ -2,15 +2,13 @@
 //! So what I want to do is create a command line application which I can use as follows:
 //! ```
 //! $ passman save for github.com user maheshbansod pass thegithubpassword
-//! $ passman gen-pass 12
+//! $ passman gen-pass [12]
 //! $ passman save for <website> user <username> (pass <password>|genpass [<len>])
 //! $ passman get for <website> user <username>
 //! $ passman sync
 //!
 
 use structopt::StructOpt;
-
-mod passman;
 
 fn main() {
     let args = Cli::from_args();
@@ -80,34 +78,4 @@ enum Cli {
         user: String,
     },
     Sync {},
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn it_should_save_a_pass_and_get_it_inmemory() {
-        let mut passman = passman::PassMan::new(&"testdb.test");
-        passman.save_or_update("test1", "user1", "pass1");
-        passman.save_or_update("test2", "user2", "pass2");
-        passman.save_or_update("test1", "user3", "pass3");
-
-        assert_eq!(passman.get("test1", "user1"), Some(String::from("pass1")));
-        assert_eq!(passman.get("test2", "user2"), Some(String::from("pass2")));
-        assert_eq!(passman.get("test1", "user3"), Some(String::from("pass3")));
-    }
-    #[test]
-    fn it_should_save_a_pass_and_get_it_in_a_file() {
-        let mut passman = passman::PassMan::new(&std::path::PathBuf::from("testdb.test"));
-        passman.save_or_update("test1", "user1", "pass1");
-        passman.save_or_update("test2", "user2", "pass2");
-        passman.save_or_update("test1", "user3", "pass3");
-        passman.save().unwrap();
-
-        let passman = passman::PassMan::new(&std::path::PathBuf::from("testdb.test"));
-
-        assert_eq!(passman.get("test1", "user1"), Some(String::from("pass1")));
-        assert_eq!(passman.get("test2", "user2"), Some(String::from("pass2")));
-        assert_eq!(passman.get("test1", "user3"), Some(String::from("pass3")));
-    }
 }

@@ -83,3 +83,33 @@ impl From<std::io::Error> for Error {
         Error {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn it_should_save_a_pass_and_get_it_inmemory() {
+        let mut passman = crate::PassMan::new(&"testdb.test");
+        passman.save_or_update("test1", "user1", "pass1");
+        passman.save_or_update("test2", "user2", "pass2");
+        passman.save_or_update("test1", "user3", "pass3");
+
+        assert_eq!(passman.get("test1", "user1"), Some(String::from("pass1")));
+        assert_eq!(passman.get("test2", "user2"), Some(String::from("pass2")));
+        assert_eq!(passman.get("test1", "user3"), Some(String::from("pass3")));
+    }
+    #[test]
+    fn it_should_save_a_pass_and_get_it_in_a_file() {
+        let mut passman = PassMan::new(&std::path::PathBuf::from("testdb.test"));
+        passman.save_or_update("test1", "user1", "pass1");
+        passman.save_or_update("test2", "user2", "pass2");
+        passman.save_or_update("test1", "user3", "pass3");
+        passman.save().unwrap();
+
+        let passman = PassMan::new(&std::path::PathBuf::from("testdb.test"));
+
+        assert_eq!(passman.get("test1", "user1"), Some(String::from("pass1")));
+        assert_eq!(passman.get("test2", "user2"), Some(String::from("pass2")));
+        assert_eq!(passman.get("test1", "user3"), Some(String::from("pass3")));
+    }
+}
