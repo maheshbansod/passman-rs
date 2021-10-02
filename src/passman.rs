@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Eq, Hash)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
 struct PassMapKey {
     for_what: String,
     user: String,
@@ -55,12 +55,6 @@ impl PassMan {
     pub fn save(&self) -> Result<(), Error> {
         std::fs::write(&self.dfile, bincode::serialize(&self.data)?)?;
         Ok(())
-    }
-}
-
-impl std::cmp::PartialEq for PassMapKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.for_what == other.for_what && self.user == other.user
     }
 }
 
