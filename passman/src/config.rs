@@ -1,12 +1,10 @@
 use bincode_aes::BincodeCryptor;
-use crypto::digest::Digest;
 use crypto::scrypt;
-use crypto::sha1::Sha1;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 
 pub struct Config {
     pub cryptor: BincodeCryptor,
@@ -55,8 +53,6 @@ impl Config {
 
     /// Saves a Config to a file
     pub fn to_file<P: AsRef<Path>>(&self, path: P, secret_key: &str) -> Result<(), Error> {
-        // SERIOUS VULNERABILITY
-        // THIS WILL OVERWRITE SETTINGS NOW. TODO: MAKE SURE TO FIX IT AT SOME POINT TO CHECK IF THE SECRET KEY IS CORRECT
         let salt = "salt";
         let mut key_bytes: [u8; 32] = [0; 32];
         scrypt::scrypt(
@@ -66,13 +62,15 @@ impl Config {
             &mut key_bytes,
         );
 
-        // let mut hasher = Sha1::new();
+        let key = bincode_aes::create_key(key_bytes.to_vec())?;
 
-        // hasher.input(&key_bytes);
+        let new_cryptor = bincode_aes::with_key(key);
 
-        // let mut hashed_key = vec![];
-
-        // hasher.result(&mut hashed_key);
+        let test_str = "Test string";
+        let mut serialized = new_cryptor.serialize(test_str).unwrap();
+        if let Err(_) = self.cryptor.deserialize::<String>(&mut serialized) {
+            return Err(Error::new(ErrorKind::InvalidKeyError));
+        }
 
         let config = ConfigFile {
             secret_key: key_bytes.to_vec(),
