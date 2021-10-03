@@ -3,12 +3,19 @@ pub struct Error {
     pub kind: ErrorKind,
 }
 
+impl Error {
+    pub fn new(kind: ErrorKind) -> Self {
+        Self { kind }
+    }
+}
+
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum ErrorKind {
     Serialization(std::boxed::Box<bincode::ErrorKind>),
     IOError(std::io::Error),
     CryptorError(bincode_aes::CryptorError),
+    InvalidKeyError,
 }
 impl From<std::boxed::Box<bincode::ErrorKind>> for Error {
     fn from(err: std::boxed::Box<bincode::ErrorKind>) -> Error {
