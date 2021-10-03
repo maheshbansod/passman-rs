@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 
-use config::Config;
-use error::Error;
+pub use config::Config;
+pub use error::Error;
+pub use error::ErrorKind;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Debug)]
 struct PassMapKey {
     for_what: String,
     user: String,
@@ -28,10 +29,24 @@ impl PassMan {
     }
 
     pub fn with_config(config: Config) -> Result<Self, Error> {
-        let data = if let Ok(data) = std::fs::read_to_string(config.db_path()) {
-            let mut bytes = data.as_bytes().to_vec();
-            //TODO: remove the unwrap and find out houw to handle Box<dyn Errors>????
-            config.cryptor.deserialize(&mut bytes).unwrap()
+        use std::io;
+        use std::io::prelude::*;
+        // let mut file = std::fs::File::open(config.db_path())?;
+        let mut bytes = vec![];
+        let data = if let Ok(mut file) = std::fs::File::open(config.db_path()) {
+            match file.read_to_end(&mut bytes) {
+                Ok(_) => {
+                    let mut bytes = bytes.to_vec();
+                    //TODO: remove the unwrap and find out houw to handle Box<dyn Errors>????
+                    config.cryptor.deserialize(&mut bytes).unwrap()
+                }
+                Err(err) => match err.kind() {
+                    io::ErrorKind::NotFound => HashMap::new(),
+                    err => {
+                        panic!("{:?}", err);
+                    }
+                },
+            }
         } else {
             HashMap::new()
         };
@@ -62,7 +77,10 @@ impl PassMan {
     /// Save the object that is in memory to the data file
     /// Note that without calling this method, nothing will be saved in the file
     pub fn save(&self) -> Result<(), Error> {
-        std::fs::write(&self.config.db_path(), bincode::serialize(&self.data)?)?;
+        std::fs::write(
+            &self.config.db_path(),
+            self.config.cryptor.serialize(&self.data).unwrap(),
+        )?;
         Ok(())
     }
 }
@@ -77,12 +95,15 @@ pub fn genpass(len: Option<usize>) -> String {
         .collect()
 }
 
+// TODO: have the tests clean their files
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn it_should_save_a_pass_and_get_it_inmemory() {
-        let config = Config::new("secret_key").unwrap();
+        let config = Config::new("secret_key")
+            .unwrap()
+            .set_db("it_should_save_a_pass_and_get_it_inmemory.db.test");
         let mut passman = crate::PassMan::with_config(config).unwrap();
         passman.save_or_update("test1", "user1", "pass1");
         passman.save_or_update("test2", "user2", "pass2");
@@ -94,14 +115,18 @@ mod tests {
     }
     #[test]
     fn it_should_save_a_pass_and_get_it_in_a_file() {
-        let config = Config::new("secret_key").unwrap();
+        let config = Config::new("secret_key")
+            .unwrap()
+            .set_db("it_should_save_a_pass_and_get_it_in_a_file.db.test");
         let mut passman = crate::PassMan::with_config(config).unwrap();
         passman.save_or_update("test1", "user1", "pass1");
         passman.save_or_update("test2", "user2", "pass2");
         passman.save_or_update("test1", "user3", "pass3");
         passman.save().unwrap();
 
-        let config = Config::new("secret_key").unwrap();
+        let config = Config::new("secret_key")
+            .unwrap()
+            .set_db("it_should_save_a_pass_and_get_it_in_a_file.db.test");
         let passman = crate::PassMan::with_config(config).unwrap();
 
         assert_eq!(passman.get("test1", "user1"), Some(String::from("pass1")));

@@ -1,5 +1,9 @@
 use bincode_aes::BincodeCryptor;
+use crypto::digest::Digest;
+use crypto::scrypt;
+use crypto::sha1::Sha1;
 use serde::{Deserialize, Serialize};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use crate::error::Error;
@@ -11,7 +15,9 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize)]
 struct ConfigFile {
-    secret_key: String,
+    //Plain text now. TODO: make it hash of scrypt of the master password = sha1(scrypt(secret_key)).
+    //scrypt(secret_key) = key for AES
+    secret_key: Vec<u8>,
     db_location: PathBuf,
 }
 
@@ -19,7 +25,15 @@ impl Config {
     /// Create a new config
     pub fn new(key: &str) -> Result<Self, Error> {
         let default_path = ".passman-db";
-        let key = bincode_aes::create_key(key.as_bytes().to_vec())?;
+        let salt = "salt";
+        let mut key_bytes: [u8; 32] = [0; 32];
+        scrypt::scrypt(
+            key.as_bytes(),
+            salt.as_bytes(),
+            &scrypt::ScryptParams::new(11, 8, 2),
+            &mut key_bytes,
+        );
+        let key = bincode_aes::create_key(key_bytes.to_vec())?;
         Ok(Self {
             cryptor: bincode_aes::with_key(key),
             db_location: PathBuf::from(default_path),
@@ -28,9 +42,11 @@ impl Config {
 
     /// Returns a Config from a file
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
-        let config: ConfigFile =
-            bincode::deserialize(std::fs::read_to_string(path)?.as_bytes()).unwrap();
-        let key = bincode_aes::create_key(config.secret_key.as_bytes().to_vec())?;
+        let mut file = std::fs::File::open(path)?;
+        let mut bytes = vec![];
+        file.read_to_end(&mut bytes)?;
+        let config: ConfigFile = bincode::deserialize(&bytes).unwrap();
+        let key = bincode_aes::create_key(config.secret_key.to_vec())?;
         Ok(Config {
             cryptor: bincode_aes::with_key(key),
             db_location: config.db_location,
@@ -39,8 +55,27 @@ impl Config {
 
     /// Saves a Config to a file
     pub fn to_file<P: AsRef<Path>>(&self, path: P, secret_key: &str) -> Result<(), Error> {
+        // SERIOUS VULNERABILITY
+        // THIS WILL OVERWRITE SETTINGS NOW. TODO: MAKE SURE TO FIX IT AT SOME POINT TO CHECK IF THE SECRET KEY IS CORRECT
+        let salt = "salt";
+        let mut key_bytes: [u8; 32] = [0; 32];
+        scrypt::scrypt(
+            secret_key.as_bytes(),
+            salt.as_bytes(),
+            &scrypt::ScryptParams::new(11, 8, 2),
+            &mut key_bytes,
+        );
+
+        // let mut hasher = Sha1::new();
+
+        // hasher.input(&key_bytes);
+
+        // let mut hashed_key = vec![];
+
+        // hasher.result(&mut hashed_key);
+
         let config = ConfigFile {
-            secret_key: secret_key.to_string(),
+            secret_key: key_bytes.to_vec(),
             db_location: self.db_location.clone(),
         };
         std::fs::write(path, bincode::serialize(&config)?)?;
