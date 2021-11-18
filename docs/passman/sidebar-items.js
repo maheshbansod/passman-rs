@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ErrorKind",""]],"fn":[["genpass","Generate a random password of the length if provided"]],"struct":[["Config",""],["Error",""],["PassMan",""]]});
